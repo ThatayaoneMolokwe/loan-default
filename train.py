@@ -1,3 +1,4 @@
+%%writefile train.py
 import os
 import joblib
 import numpy as np
