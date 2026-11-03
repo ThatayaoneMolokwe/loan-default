@@ -1,7 +1,8 @@
+%%writefile app.py
 import os
 import joblib
 import pandas as pd
-import streamlit as st  # <--- THIS WAS MISSING, CAUSING THE NAMEERROR
+import streamlit as st
 
 # Page configuration
 st.set_page_config(
@@ -10,21 +11,21 @@ st.set_page_config(
     layout="centered"
 )
 
-# Load trained pipeline safely
+# Load model pipeline safely from model.pkl
 @st.cache_resource
 def load_pipeline():
-    if os.path.exists("model/loan_pipeline.joblib"):
-        return joblib.load("model/loan_pipeline.joblib")
+    if os.path.exists("model.pkl"):
+        return joblib.load("model.pkl")
     return None
 
 pipeline = load_pipeline()
 
 st.title("🏦 Alpha Dreamers Banking Consortium")
 st.subheader("Loan Officer Decision-Support Prototype")
-st.markdown("This tool evaluates applicant default risk using a validated **Logistic Regression pipeline**[cite: 4]. *Note: This is a decision-support prototype and does not make automated lending decisions[cite: 4].*")
+st.markdown("This tool evaluates applicant default risk using a validated **Logistic Regression pipeline**[cite: 4].")
 
 if pipeline is None:
-    st.error("⚠️ Trained model pipeline not found! Please run your `train.py` script first to generate `model/loan_pipeline.joblib`.")
+    st.error("⚠️ Trained model file `model.pkl` not found! Please run your `train.py` script first.")
 else:
     with st.form("loan_form"):
         st.markdown("### Applicant Financial Profile")
@@ -64,6 +65,6 @@ else:
             st.metric(label="Recommended Risk Tier", value=risk_category)
             
         if prob > 0.35:
-            st.warning("⚠️ **Flagged for Review**: The applicant exceeds risk thresholds. Manual verification of debt-to-income ratio and credit history is advised.")
+            st.warning("⚠️ **Flagged for Review**: Manual verification advised.")
         else:
-            st.success("✅ **Standard Processing**: Applicant falls within acceptable risk parameters.")
+            st.success("✅ **Standard Processing**: Applicant falls within acceptable parameters.")
