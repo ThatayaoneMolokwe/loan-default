@@ -1,3 +1,4 @@
+#%%writefile train.py
 import os
 import joblib
 import numpy as np
@@ -10,18 +11,22 @@ from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-# Create directories
+# Create necessary directories
 os.makedirs("data", exist_ok=True)
 
-# Load instead of retraining if model.pkl already exists
+# 1. Load model and metadata instead of retraining if model.pkl already exists
 if os.path.exists("model.pkl"):
-    print("--- Model found! Loading instead of retraining ---")
-    model = joblib.load("model.pkl")  # Load instead of retraining
+    print("--- Model and metadata found! Loading from disk ---")
+    saved_package = joblib.load("model.pkl")
+    model = saved_package["model"]
+    metadata = saved_package["metadata"]
+    print(f"Loaded model trained on: {metadata['training_date']}")
 else:
-    print("--- Training new model ---")
+    print("--- Training new Logistic Regression Pipeline & generating metadata ---")
     np.random.seed(42)
     n_samples = 2000
 
+    # Generate dataset
     data = {
         "income": np.random.exponential(scale=50000, size=n_samples) + 20000,
         "loan_amount": np.random.exponential(scale=15000, size=n_samples) + 5000,
@@ -91,18 +96,36 @@ else:
         X, y, test_size=0.2, random_state=42, stratify=y
     )
 
-    print("--- Fitting Logistic Regression Pipeline ---")
+    print("--- Fitting Pipeline ---")
     model.fit(X_train, y_train)
 
-    # 5. Evaluation
+    # 5. Evaluation metrics
     y_pred = model.predict(X_test)
     y_prob = model.predict_proba(X_test)[:, 1]
+    roc_auc = roc_auc_score(y_test, y_prob)
 
     print("\nClassification Report:")
     print(classification_report(y_test, y_pred))
-    print(f"ROC-AUC Score: {roc_auc_score(y_test, y_prob):.4f}")
+    print(f"ROC-AUC Score: {roc_auc:.4f}")
 
-    # Save after training
-    import joblib
-    joblib.dump(model, "model.pkl")  # Save after training
-    print("\n✅ Model successfully saved to model.pkl")
+    # 6. Define Metadata Dictionary
+    metadata = {
+        "training_date": pd.Timestamp.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "model_type": "Logistic Regression with ColumnTransformer Pipeline",
+        "numeric_features": numeric_features,
+        "categorical_features": categorical_features,
+        "target": "default",
+        "classes": [0, 1],
+        "metrics": {
+            "roc_auc": float(roc_auc)
+        },
+        "allowed_loan_intents": ["PERSONAL", "EDUCATION", "MEDICAL", "VENTURE"]
+    }
+
+    # Save model pipeline and metadata together using joblib
+    saved_package = {
+        "model": model,
+        "metadata": metadata
+    }
+    joblib.dump(saved_package, "model.pkl")  # Save after training
+    print("\n✅ Model and Metadata successfully saved to model.pkl")
