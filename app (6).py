@@ -1,3 +1,4 @@
+#%%writefile app.py
 import os
 import joblib
 import pandas as pd
@@ -5,8 +6,8 @@ import streamlit as st
 
 # Page configuration
 st.set_page_config(
-    page_title="Loan Default Risk Decision Support", 
-    page_icon="🏦", 
+    page_title="Loan Default Risk Decision Support",
+    page_icon="🏦",
     layout="centered"
 )
 
@@ -29,17 +30,17 @@ else:
     with st.form("loan_form"):
         st.markdown("### Applicant Financial Profile")
         col1, col2 = st.columns(2)
-        
+
         with col1:
             income = st.number_input("Annual Income ($)", min_value=10000.0, max_value=1000000.0, value=65000.0, step=1000.0)
             loan_amount = st.number_input("Requested Loan Amount ($)", min_value=1000.0, max_value=200000.0, value=15000.0, step=500.0)
-        
+
         with col2:
             credit_score = st.number_input("Credit Score", min_value=300, max_value=850, value=700, step=1)
             employment_length = st.number_input("Employment Length (Years)", min_value=0, max_value=50, value=5, step=1)
-        
+
         loan_intent = st.selectbox("Loan Intent", ["PERSONAL", "EDUCATION", "MEDICAL", "VENTURE"])
-        
+
         submitted = st.form_submit_button("Evaluate Default Risk")
 
     if submitted:
@@ -50,19 +51,19 @@ else:
             "employment_length": [employment_length],
             "loan_intent": [loan_intent]
         })
-        
+
         prob = pipeline.predict_proba(input_data)[0][1]
-        
+
         st.markdown("---")
         st.subheader("Evaluation Result")
-        
+
         col_res1, col_res2 = st.columns(2)
         with col_res1:
             st.metric(label="Estimated Default Probability", value=f"{prob:.2%}")
         with col_res2:
             risk_category = "High Risk (Review Required)" if prob > 0.35 else "Low Risk (Standard Processing)"
             st.metric(label="Recommended Risk Tier", value=risk_category)
-            
+
         if prob > 0.35:
             st.warning("⚠️ **Flagged for Review**: Manual verification advised.")
         else:
